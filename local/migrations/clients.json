@@ -1,0 +1,29 @@
+{
+    "Table": {
+        "TableName": "clients",
+        "KeySchema": [ 
+            {
+                "AttributeName": "clientId",
+                "KeyType": "HASH"
+            },
+            {
+                "AttributeName": "objectKey",
+                "KeyType": "RANGE"
+            }
+        ],
+        "AttributeDefinitions": [
+            {
+                "AttributeName": "clientId",
+                "AttributeType": "S"
+            },
+            {
+                "AttributeName": "objectKey",
+                "AttributeType": "S"
+            }
+        ],
+        "ProvisionedThroughput": {
+            "ReadCapacityUnits": 1,
+            "WriteCapacityUnits": 1
+        }
+    }
+}

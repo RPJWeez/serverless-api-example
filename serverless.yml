@@ -1,0 +1,103 @@
+service: serverless-api-example
+
+frameworkVersion: "3"
+
+plugins:
+#NOTE: there is a package called serverless-dynamodb-local which no longer works, replaced with the below package: https://github.com/99x/serverless-dynamodb-local/issues/294
+  - serverless-dynamodb
+  - serverless-offline
+
+custom:
+  serverless-offline:
+    noPrependStageInUrl: true
+  dynamodb:
+    stages:
+      - dev
+    start:
+      port: 8000
+      inMemory: true
+      migrate: true
+    # Comment if you don't have a DynamoDB running locally in docker
+      # noStart: true
+    migration:
+      dir: local/migrations
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  lambdaHashingVersion: '20201221'
+  environment:
+    DYNAMODB_TABLE: ${self:service}-${sls:stage}
+  httpApi:
+    cors: true
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+          Resource: "arn:aws:dynamodb:${aws:region}:*:table/${self:provider.environment.DYNAMODB_TABLE}"
+
+functions:
+  create:
+    handler: handlers/createClient.create
+    events:
+      - httpApi:
+          path: /clients
+          method: post
+
+  # list:
+  #   handler: handlers/list.list
+  #   events:
+  #     - httpApi:
+  #         path: /clients
+  #         method: get
+
+  get:
+    handler: handlers/getClient.get
+    events:
+      - httpApi:
+          path: /clients/{id}
+          method: get
+
+  # update:
+  #   handler: handlers/update.update
+  #   events:
+  #     - httpApi:
+  #         path: /clients/{id}
+  #         method: put
+
+  # delete:
+  #   handler: handlers/delete.delete
+  #   events:
+  #     - httpApi:
+  #         path: /clients/{id}
+  #         method: delete
+
+resources:
+  Resources:
+    ClientsDynamoDbTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: clientId
+            AttributeType: S
+          -
+            AttributeName: objectKey
+            AttributeType: S
+        KeySchema:
+          -
+            AttributeName: clientId
+            KeyType: HASH
+          -
+            AttributeName: objectKey
+            KeyType: RANGE
+        BillingMode: PAY_PER_REQUEST
+        TableName: ${self:provider.environment.DYNAMODB_TABLE}
