@@ -24,21 +24,23 @@ module.exports.get = async (event, context, callback) => {
 
     try {
         const result = await dynamodb.send(getCommand);
-        console.log(JSON.stringify(result.Item))
-        const responseBody = unmarshall(result.Item); //aws v3 sdk uses dynamoDB's god-awful syntax, so using util to convert it
-        delete responseBody.objectKey; //sort key is a system detail the client does not need to know about
-        
-        const response = { 
-            statusCode: 201,
-            body: JSON.stringify(responseBody) //for AWS API gateway, it expects the response in a JSON-formatted string for some reason
-        };
+        let response = {
+            statusCode: 404
+        }
+        if (result && result.Item) {
+            const responseBody = unmarshall(result.Item); //aws v3 sdk uses dynamoDB's god-awful syntax, so using util to convert it
+            delete responseBody.objectKey; //sort key is a system detail the client does not need to know about
+
+            response = {
+                statusCode: 201,
+                body: JSON.stringify(responseBody) //for AWS API gateway, it expects the response in a JSON-formatted string for some reason
+            };
+        }
         callback(null, response);
     } catch (error) {
         console.error(error);
         callback(null, {
-            statusCode: error.statusCode || 500,
-            headers: { 'Content-Type': 'text/plain' },
-            body: 'Get failed',
+            statusCode: error.statusCode || 500
         });
         return;
     }
